@@ -1,0 +1,283 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{dsfont}
+\usepackage{tikz}
+\usepackage{hyperref}
+
+\geometry{hmargin=1.5cm, top=1cm, bottom=1.2cm, footskip=0.5cm}
+\setlength{\parskip}{3pt}
+\setlength{\parindent}{0pt}
+\setlist{itemsep=1pt,topsep=2pt}
+
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\R}{\mathcal{R}}
+\newcommand{\N}{\mathcal{N}}
+
+\title{Projet SDP -- Apprentissage de modèles MR-Sort}
+\author{Côme-Alexis Puech \and Hugo Vigna \and Salomé Fonvielle}
+\date{Octobre 2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Préliminaires : admission d'étudiants}
+
+% ------------------------------------------------------------------
+\subsection*{Question i}
+
+Somme des poids des cours validés ($\geq 12$), avec $w=(0.25,0.15,0.2,0.4)$, $\lambda=0.66$ :
+Alice $0.15+0.2+0.4=0.75$ ($\A$), Bob $0.25+0.15+0.2=0.60$ ($\R$),
+Charlie $0.15+0.4=0.55$ ($\R$), David $1$ ($\A$).
+Bob ne peut pas améliorer sa situation : avec 12 en physique, ce cours est déjà validé,
+une meilleure note n'y change rien.
+
+% ------------------------------------------------------------------
+\subsection*{Question ii}
+
+Les 4 cours doivent jouer des rôles symétriques (3 cours quelconques suffisent), d'où
+$w_M=w_P=w_L=w_H=\frac14$ et $\lambda\in\left]\frac12,\frac34\right]$, par exemple $\lambda=0.75$ :
+3 cours pèsent $\frac34\geq\lambda$, 2 cours pèsent $\frac12<\lambda$.
+
+% ------------------------------------------------------------------
+\subsection*{Question iii}
+
+Coalitions gagnantes (somme des poids $\geq \lambda$) dans les deux cas :
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Coalition & $w = (0.49, 0.49, 0.02)$, $\lambda=0.5$ & $w = (\frac13,\frac13,\frac13)$, $\lambda=0.5$ \\
+\midrule
+$\{1\}$, $\{2\}$, $\{3\}$ & $0.49,\ 0.49,\ 0.02$ : perdantes & $0.33$ : perdantes \\
+$\{1,2\}$ & $0.98$ : gagnante & $0.67$ : gagnante \\
+$\{1,3\}$, $\{2,3\}$ & $0.51$ : gagnantes & $0.67$ : gagnantes \\
+$\{1,2,3\}$ & $1$ : gagnante & $1$ : gagnante \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Dans les deux cas, un étudiant est admis si et seulement s'il valide \emph{au moins 2 cours sur 3} :
+les deux jeux de paramètres définissent la même règle.
+
+\textbf{Conclusion.} $(w,\lambda)$ n'est pas unique : seul compte l'ensemble des coalitions gagnantes.
+Les poids ne mesurent pas l'importance (le cours 3, de poids $0.02$, est aussi décisif que les autres) ;
+un modèle appris s'évalue donc sur ses décisions, pas sur ses paramètres.
+
+% ------------------------------------------------------------------
+\subsection*{Question iv}
+
+Comme $b$ est connu, on sait pour chaque objet $x$ quels critères il valide : $C(x)=\{i\in\N : x_i\geq b_i\}$.
+Son score $s(x)=\sum_{i\in C(x)} w_i$ est donc linéaire en $w$.
+\textbf{Variables :} $w_i\geq 0$, $\lambda\in[0,1]$ et $\alpha$, la marge.
+\begin{align*}
+\max\ & \alpha \\
+\text{s.c.}\ & s(x) \geq \lambda + \alpha && \forall x\in A^* \\
+& s(x) \leq \lambda - \alpha && \forall x\in R^* \\
+& \textstyle\sum_{i\in\N} w_i = 1
+\end{align*}
+$\alpha$ est l'écart minimal entre les scores et le seuil $\lambda$ : on cherche le modèle qui sépare le plus nettement
+acceptés et rejetés. Si $\alpha^*>0$, tous les objets sont bien classés ; sinon, aucun modèle ne restitue parfaitement les données.
+
+\begin{center}
+\begin{tikzpicture}[x=26cm,y=1cm,font=\small]
+  \fill[gray!15] (0.60,-0.15) rectangle (0.75,0.9);
+  \draw[->] (0.48,0) -- (1.03,0) node[right] {$s(x)$};
+  \foreach \t in {0.5,0.6,0.7,0.8,0.9,1.0} \draw (\t,0.06) -- (\t,-0.06) node[below] {\footnotesize\t};
+  \draw[dashed,thick] (0.675,-0.15) -- (0.675,1.15) node[above] {$\lambda$};
+  \draw[<->] (0.60,0.7) -- node[above] {$\alpha$} (0.675,0.7);
+  \draw[<->] (0.675,0.7) -- node[above] {$\alpha$} (0.75,0.7);
+  \foreach \v/\n in {0.55/Charlie,0.60/Bob} \fill[red!75!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
+  \foreach \v/\n in {0.75/Alice,1.0/David} \fill[green!50!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
+\end{tikzpicture}
+
+\footnotesize Exemple de la question i : rejetés en rouge, acceptés en vert.
+\end{center}
+
+% ------------------------------------------------------------------
+\subsection*{Question v}
+
+On veut $\delta_i(x)=\mathds{1}_{\{x_i\geq b_i\}}$. Si $b$ était connu, ce serait une donnée ; mais $b_i$ est une variable,
+et cette indicatrice est une fonction en escalier de $b_i$, qu'on ne peut pas écrire telle quelle dans un programme linéaire.
+On l'impose par deux contraintes linéaires, une pour chaque sens de l'équivalence ($\forall i\in\N$, $\forall x$) :
+\begin{align*}
+x_i-b_i &\geq M\,(\delta_i(x)-1) &\qquad (1)\quad \delta_i(x)=1 \Rightarrow x_i\geq b_i \\
+x_i-b_i &\leq M\,\delta_i(x)-\varepsilon &\qquad (2)\quad \delta_i(x)=0 \Rightarrow x_i< b_i
+\end{align*}
+On suppose les données normalisées dans $[0,1]$ sur chaque critère (transformation croissante, qui ne change pas
+les affectations). Alors $b_i\in[0,1]$, $|x_i-b_i|\leq 1$, et $M=2$ suffit pour que la contrainte qui ne doit pas jouer
+soit toujours vraie. $\varepsilon>0$ petit remplace l'inégalité stricte.
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+ & Contrainte (1) & Contrainte (2) & Conclusion \\
+\midrule
+$\delta_i(x)=1$ & $x_i-b_i\geq 0$ & $x_i-b_i\leq M-\varepsilon$ \ (toujours vraie) & $x_i\geq b_i$ \\
+$\delta_i(x)=0$ & $x_i-b_i\geq -M$ \ (toujours vraie) & $x_i-b_i\leq-\varepsilon$ & $x_i<b_i$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ------------------------------------------------------------------
+\subsection*{Question vi}
+
+On veut $w_i(x)=w_i\,\delta_i(x)$ : c'est un produit de deux variables, donc non linéaire. Les contraintes
+\begin{align*}
+w_i \geq w_i(x) &\geq 0 && (3)\\
+\delta_i(x) \geq w_i(x) &\geq \delta_i(x)+w_i-1 && (4)
+\end{align*}
+remplacent ce produit. On vérifie les deux cas ; les bornes non citées sont toujours vraies car $0\leq w_i\leq 1$
+($w_i\geq 0$ et $\sum_i w_i=1$) :
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+ & Borne inférieure & Borne supérieure & Conclusion \\
+\midrule
+$\delta_i(x)=1$ & $w_i(x)\geq w_i$ \ (4) & $w_i(x)\leq w_i$ \ (3) & $w_i(x)=w_i$ \\
+$\delta_i(x)=0$ & $w_i(x)\geq 0$ \ (3) & $w_i(x)\leq 0$ \ (4) & $w_i(x)=0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Donc $\displaystyle\sum_{i\in\N} w_i(x)=\sum_{i:\,x_i\geq b_i} w_i = s(x)$ : c'est le poids de la coalition des critères
+validés par $x$, c'est-à-dire son score. L'étudiant $x$ est admis si et seulement si
+\[
+s(x)=\sum_{i\in\N} w_i(x) \geq \lambda .
+\]
+
+% ------------------------------------------------------------------
+\subsection*{Question vii}
+
+Les questions v et vi permettent d'écrire le score sans connaître $b$ :
+\[
+s(x)=\sum_{i\in\N} w_i\,\delta_i(x)=\sum_{i\in\N} w_i(x).
+\]
+On reprend donc le PL de la question iv avec ce score, en ajoutant les contraintes (1) à (4) qui le définissent.
+Les données sont normalisées dans $[0,1]$, $M=2$ et $\varepsilon>0$ petit.
+
+\medskip
+\textbf{Variables.}
+\begin{itemize}
+  \item du modèle : $w_i\geq 0$, $b_i\in[0,1]$ pour $i\in\N$, et $\lambda\in[0,1]$ ;
+  \item de la marge : $\alpha$ ;
+  \item pour chaque objet $x$ et chaque critère $i$ : $\delta_i(x)\in\{0,1\}$ et $w_i(x)\geq 0$.
+\end{itemize}
+
+\medskip
+\textbf{Programme.}
+\begin{align*}
+\max\quad & \alpha \\[4pt]
+\text{s.c.}\quad & \textstyle\sum_{i\in\N} w_i(x) \geq \lambda + \alpha && \forall x\in A^* && \text{(acceptés)}\\
+& \textstyle\sum_{i\in\N} w_i(x) \leq \lambda - \alpha && \forall x\in R^* && \text{(rejetés)}\\[4pt]
+& x_i-b_i \geq M\,(\delta_i(x)-1) && \forall i,\ \forall x && (1)\\
+& x_i-b_i \leq M\,\delta_i(x)-\varepsilon && \forall i,\ \forall x && (2)\\[4pt]
+& w_i \geq w_i(x) \geq 0 && \forall i,\ \forall x && (3)\\
+& \delta_i(x) \geq w_i(x) \geq \delta_i(x)+w_i-1 && \forall i,\ \forall x && (4)\\[4pt]
+& \textstyle\sum_{i\in\N} w_i = 1
+\end{align*}
+
+\medskip
+Les variables $\delta_i(x)$ étant binaires, c'est un programme linéaire mixte en nombres entiers (MILP), avec
+$n\,|A^*\cup R^*|$ variables binaires. Comme à la question iv, $\alpha^*>0$ signifie que le modèle appris restitue
+tout le learning set.
+
+% ------------------------------------------------------------------
+\subsection*{Question viii -- Résolution avec Gurobi}
+
+Voir la partie \emph{Jalon 1} ci-dessous : implémentation, exemple et protocole de test.
+
+% ------------------------------------------------------------------
+\subsection*{Question viii bis -- Généralisation à $p$ catégories}
+
+Les catégories sont ordonnées, de $\mathcal{C}^1$ (la pire) à $\mathcal{C}^p$ (la meilleure). On apprend $p-1$ frontières
+$b^1,\dots,b^{p-1}$ : $b^h$ sépare $\mathcal{C}^h$ de $\mathcal{C}^{h+1}$. Les poids $w$ et le seuil $\lambda$ sont communs à toutes les frontières.
+Un objet $x$ est dans $\mathcal{C}^h$ s'il franchit la frontière inférieure $b^{h-1}$ mais pas la frontière supérieure $b^h$ :
+on applique à chaque frontière le raisonnement à deux classes.
+
+On définit donc $\delta^h_i(x)$ et $w^h_i(x)$ pour chaque frontière $h$, avec les contraintes (1) à (4) où $b$ est remplacé par $b^h$.
+Le score de $x$ par rapport à $b^h$ est $s_h(x)=\sum_{i\in\N} w^h_i(x)$.
+
+\medskip
+\textbf{Programme.}
+\begin{align*}
+\max\quad & \alpha \\[4pt]
+\text{s.c.}\quad & s_{h-1}(x)=\textstyle\sum_{i\in\N} w^{h-1}_i(x) \geq \lambda + \alpha && \forall x\in\mathcal{C}^h,\ h\geq 2 && \text{(franchit $b^{h-1}$)}\\
+& s_h(x)=\textstyle\sum_{i\in\N} w^h_i(x) \leq \lambda - \alpha && \forall x\in\mathcal{C}^h,\ h\leq p-1 && \text{(ne franchit pas $b^h$)}\\[4pt]
+& \text{(1) à (4) avec } b^h,\ \delta^h_i(x),\ w^h_i(x) && \forall i,\ \forall x,\ \forall h \\[4pt]
+& b^{h-1}_i \leq b^h_i && \forall i,\ 2\leq h\leq p-1 && \text{(frontières ordonnées)}\\
+& \textstyle\sum_{i\in\N} w_i = 1
+\end{align*}
+
+\medskip
+Pour $p=2$, on retrouve le programme de la question vii. En pratique, seules les frontières $b^{h-1}$ et $b^h$ qui
+encadrent la catégorie de $x$ interviennent dans ses contraintes : on ne crée $\delta^h_i(x)$ et $w^h_i(x)$ que pour ces deux
+frontières, soit au plus $2n$ variables binaires par objet. C'est ce que fait \texttt{learn\_mrsort} (résultats pour $p=3$ dans la partie Jalon 1).
+
+% ==================================================================
+\section*{Jalon 1 : implémentation et validation}
+
+\subsection*{Le programme}
+
+Le MILP de la question vii, généralisé à $p$ catégories (question viii bis), est implémenté en Python avec
+\texttt{gurobipy} dans le fichier \texttt{src/mrsort.py} (code et mode d'emploi sur le dépôt du projet).
+\begin{itemize}
+  \item \textbf{Entrée :} un learning set, fichier CSV avec une ligne par objet : les $n$ performances, puis la classe.
+        Le nombre de critères $n$ et le nombre de catégories $p$ sont déduits du fichier (ou $p$ est donné).
+  \item \textbf{Traitement :} normalisation des données dans $[0,1]$, construction du MILP, résolution par Gurobi.
+  \item \textbf{Sortie :} les poids $w$, le seuil $\lambda$, les frontières $b^1,\dots,b^{p-1}$ (dans l'échelle d'origine),
+        la marge $\alpha^*$ et le taux de restitution du learning set.
+\end{itemize}
+Commande : \texttt{python src/mrsort.py learn learning\_set.csv}.
+
+\subsection*{Exemple}
+
+Learning set de 60 étudiants notés sur 20 dans 4 cours, répartis en 3 catégories par un modèle de référence.
+Le programme trouve en moins d'une seconde un modèle qui restitue les 60 affectations ($\alpha^*=0.1$).
+Ses frontières sont proches de celles du modèle de référence sans être identiques
+(par exemple $b^1=(8.1,\ 7.5,\ 15.4,\ 2.5)$ contre $(9.0,\ 7.4,\ 15.7,\ 2.6)$) : comme vu à la question iii,
+plusieurs modèles expliquent les mêmes données.
+
+\subsection*{Protocole de test}
+
+Pour mesurer la qualité de l'apprentissage, on part d'un modèle connu et on vérifie qu'on le retrouve :
+\begin{enumerate}
+  \item On tire au hasard un modèle MR-Sort de référence $\mathcal{M}'$ : poids, $\lambda\in[0.5,1]$, frontières ordonnées.
+  \item On tire $|L|$ objets aléatoires dans $[0,1]^4$ et on les classe avec $\mathcal{M}'$ : c'est le learning set $L$.
+  \item On apprend $\mathcal{M}^*$ sur $L$ avec notre programme.
+  \item On tire 1000 nouveaux objets $T$, jamais vus, et on les classe avec $\mathcal{M}'$ et $\mathcal{M}^*$.
+        La \emph{qualité} est la proportion d'objets affectés à la même classe.
+\end{enumerate}
+On répète 20 fois et on fait la moyenne. On teste sur des objets nouveaux car, sur $L$, la restitution est
+parfaite par construction : la vraie question est de savoir si $\mathcal{M}^*$ décide comme $\mathcal{M}'$ sur des cas inconnus.
+Commande : \texttt{python src/mrsort.py test -n 4 -p 2 -m 50 -{}-runs 20}.
+
+\subsection*{Résultats}
+
+\begin{center}
+\begin{tabular}{ccccc}
+\toprule
+$p$ & $|L|$ & Qualité moyenne sur $T$ & Écart-type & Temps moyen \\
+\midrule
+2 & 20  & 88.5\,\% & 5.4\,\% & 0.05 s \\
+2 & 50  & 96.4\,\% & 2.5\,\% & 0.18 s \\
+2 & 100 & 98.4\,\% & 1.2\,\% & 0.49 s \\
+3 & 50  & 91.5\,\% & 4.3\,\% & 0.31 s \\
+3 & 100 & 96.6\,\% & 2.0\,\% & 0.74 s \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Dans les 100 essais, $\alpha^*>0$ et le learning set est restitué à 100\,\%. La qualité sur $T$ augmente avec $|L|$ :
+plus il y a d'exemples, plus les frontières et les coalitions gagnantes sont contraintes, et plus $\mathcal{M}^*$ se rapproche
+de $\mathcal{M}'$. Avec 3 catégories, il faut plus d'exemples pour une qualité comparable, car il y a deux frontières à apprendre.
+
+\end{document}
