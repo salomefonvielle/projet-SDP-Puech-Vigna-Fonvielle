@@ -1,0 +1,129 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{hyperref}
+
+\geometry{hmargin=1.5cm, top=1cm, bottom=1.2cm, footskip=0.5cm}
+\setlength{\parskip}{3pt}
+\setlength{\parindent}{0pt}
+\setlist{itemsep=1pt,topsep=2pt}
+
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\R}{\mathcal{R}}
+\newcommand{\N}{\mathcal{N}}
+
+\title{Projet SDP -- Apprentissage de modèles MR-Sort}
+\author{Côme-Alexis Puech \and Hugo Vigna \and Salomé Fonvielle}
+\date{Octobre 2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Préliminaires : admission d'étudiants}
+
+% ------------------------------------------------------------------
+\subsection*{Question i}
+
+Somme des poids des cours validés ($\geq 12$), avec $w=(0.25,0.15,0.2,0.4)$, $\lambda=0.66$ :
+Alice $0.15+0.2+0.4=0.75$ ($\A$), Bob $0.25+0.15+0.2=0.60$ ($\R$),
+Charlie $0.15+0.4=0.55$ ($\R$), David $1$ ($\A$).
+Bob ne peut pas améliorer sa situation : avec 12 en physique, ce cours est déjà validé,
+une meilleure note n'y change rien (seul H, à 10, pourrait le faire admettre).
+
+% ------------------------------------------------------------------
+\subsection*{Question ii}
+
+Les 4 cours doivent jouer des rôles symétriques (3 cours quelconques suffisent), d'où
+$w_M=w_P=w_L=w_H=\frac14$ et $\lambda\in\left]\frac12,\frac34\right]$, par exemple $\lambda=0.75$ :
+3 cours pèsent $\frac34\geq\lambda$, 2 cours pèsent $\frac12<\lambda$.
+
+% ------------------------------------------------------------------
+\subsection*{Question iii}
+
+On liste les coalitions gagnantes (somme des poids $\geq \lambda$) dans les deux cas.
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Coalition & $w = (0.49, 0.49, 0.02)$, $\lambda=0.5$ & $w = (\frac13,\frac13,\frac13)$, $\lambda=0.5$ \\
+\midrule
+$\{1\}$, $\{2\}$, $\{3\}$ & $0.49,\ 0.49,\ 0.02$ : perdantes & $0.33$ : perdantes \\
+$\{1,2\}$ & $0.98$ : gagnante & $0.67$ : gagnante \\
+$\{1,3\}$, $\{2,3\}$ & $0.51$ : gagnantes & $0.67$ : gagnantes \\
+$\{1,2,3\}$ & $1$ : gagnante & $1$ : gagnante \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Dans les deux cas, un étudiant est admis si et seulement s'il valide
+\emph{au moins 2 cours sur 3}, quels qu'ils soient : les deux jeux de paramètres
+définissent exactement la même règle de décision.
+
+\textbf{Conclusion.} $(w,\lambda)$ n'est pas unique : seul compte l'ensemble des coalitions gagnantes.
+Les poids ne mesurent pas l'importance (le cours 3, de poids $0.02$, est aussi décisif que les autres) ;
+un modèle appris s'évalue donc sur ses décisions, pas sur ses paramètres.
+
+% ------------------------------------------------------------------
+\subsection*{Question iv}
+
+Comme $b$ est connu, on sait pour chaque objet $x$ quels critères il valide : $C(x)=\{i\in\N : x_i\geq b_i\}$.
+Son score $s(x)=\sum_{i\in C(x)} w_i$ est donc linéaire en $w$.
+\textbf{Variables :} $w_i\geq 0$, $\lambda\in[0,1]$ et $\alpha$, la marge.
+\begin{align*}
+\max\ & \alpha \\
+\text{s.c.}\ & s(x) \geq \lambda + \alpha && \forall x\in A^* \\
+& s(x) \leq \lambda - \alpha && \forall x\in R^* \\
+& \textstyle\sum_{i\in\N} w_i = 1
+\end{align*}
+$\alpha$ est l'écart minimal entre les scores et le seuil $\lambda$ : on cherche le modèle qui sépare le plus nettement
+acceptés et rejetés. Si $\alpha^*>0$, tous les objets sont bien classés ; sinon, aucun modèle ne restitue parfaitement les données.
+
+\begin{center}
+\begin{tikzpicture}[x=26cm,y=1cm,font=\small]
+  \fill[gray!15] (0.60,-0.15) rectangle (0.75,0.9);
+  \draw[->] (0.48,0) -- (1.03,0) node[right] {$s(x)$};
+  \foreach \t in {0.5,0.6,0.7,0.8,0.9,1.0} \draw (\t,0.06) -- (\t,-0.06) node[below] {\footnotesize\t};
+  \draw[dashed,thick] (0.675,-0.15) -- (0.675,1.15) node[above] {$\lambda$};
+  \draw[<->] (0.60,0.7) -- node[above] {$\alpha$} (0.675,0.7);
+  \draw[<->] (0.675,0.7) -- node[above] {$\alpha$} (0.75,0.7);
+  \foreach \v/\n in {0.55/Charlie,0.60/Bob} \fill[red!75!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
+  \foreach \v/\n in {0.75/Alice,1.0/David} \fill[green!50!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
+\end{tikzpicture}
+
+\footnotesize Exemple de la question i : rejetés en rouge, acceptés en vert.
+\end{center}
+
+% ------------------------------------------------------------------
+\subsection*{Question v}
+
+% TODO : contraintes définissant delta_i(x).
+
+% ------------------------------------------------------------------
+\subsection*{Question vi}
+
+% TODO : linéarisation de w_i(x) et condition d'admission.
+
+% ------------------------------------------------------------------
+\subsection*{Question vii}
+
+% TODO : MILP apprenant simultanément b, w et lambda.
+
+% ------------------------------------------------------------------
+\subsection*{Question viii -- Résolution avec Gurobi}
+
+% TODO
+
+% ------------------------------------------------------------------
+\subsection*{Question viii bis -- Généralisation à $p$ catégories}
+
+% TODO
+
+\end{document}

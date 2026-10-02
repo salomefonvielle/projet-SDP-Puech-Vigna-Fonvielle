@@ -1,0 +1,10 @@
+build/
+.DS_Store
+*.aux
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+__pycache__/
+.ipynb_checkpoints/
