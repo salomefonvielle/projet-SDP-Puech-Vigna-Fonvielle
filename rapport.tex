@@ -7,6 +7,7 @@
 \usepackage{geometry}
 \usepackage{booktabs}
 \usepackage{enumitem}
+\usepackage{dsfont}
 \usepackage{tikz}
 \usepackage{hyperref}
 
@@ -104,12 +105,54 @@ acceptés et rejetés. Si $\alpha^*>0$, tous les objets sont bien classés ; sin
 % ------------------------------------------------------------------
 \subsection*{Question v}
 
-% TODO : contraintes définissant delta_i(x).
+On veut $\delta_i(x)=\mathds{1}_{\{x_i\geq b_i\}}$. Si $b$ était connu, ce serait une donnée ; mais $b_i$ est une variable,
+et cette indicatrice est une fonction en escalier de $b_i$, qu'on ne peut pas écrire telle quelle dans un programme linéaire.
+On l'impose par deux contraintes linéaires, une pour chaque sens de l'équivalence ($\forall i\in\N$, $\forall x$) :
+\begin{align*}
+x_i-b_i &\geq M\,(\delta_i(x)-1) &\qquad (1)\quad \delta_i(x)=1 \Rightarrow x_i\geq b_i \\
+x_i-b_i &\leq M\,\delta_i(x)-\varepsilon &\qquad (2)\quad \delta_i(x)=0 \Rightarrow x_i< b_i
+\end{align*}
+On suppose les données normalisées dans $[0,1]$ sur chaque critère (transformation croissante, qui ne change pas
+les affectations). Alors $b_i\in[0,1]$, $|x_i-b_i|\leq 1$, et $M=2$ suffit pour que la contrainte qui ne doit pas jouer
+soit toujours vraie. $\varepsilon>0$ petit remplace l'inégalité stricte.
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+ & Contrainte (1) & Contrainte (2) & Conclusion \\
+\midrule
+$\delta_i(x)=1$ & $x_i-b_i\geq 0$ & $x_i-b_i\leq M-\varepsilon$ \ (toujours vraie) & $x_i\geq b_i$ \\
+$\delta_i(x)=0$ & $x_i-b_i\geq -M$ \ (toujours vraie) & $x_i-b_i\leq-\varepsilon$ & $x_i<b_i$ \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 % ------------------------------------------------------------------
 \subsection*{Question vi}
 
-% TODO : linéarisation de w_i(x) et condition d'admission.
+On veut $w_i(x)=w_i\,\delta_i(x)$ : c'est un produit de deux variables, donc non linéaire. Les contraintes
+\begin{align*}
+w_i \geq w_i(x) &\geq 0 && (3)\\
+\delta_i(x) \geq w_i(x) &\geq \delta_i(x)+w_i-1 && (4)
+\end{align*}
+remplacent ce produit. On vérifie les deux cas, en utilisant $0\leq w_i\leq 1$ (car $w_i\geq 0$ et $\sum_i w_i=1$) :
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+ & Contrainte (3) & Contrainte (4) & Conclusion \\
+\midrule
+$\delta_i(x)=1$ & $w_i\geq w_i(x)\geq 0$ & $1\geq w_i(x)\geq w_i$ & $w_i(x)=w_i$ \\
+$\delta_i(x)=0$ & $w_i\geq w_i(x)\geq 0$ & $0\geq w_i(x)\geq w_i-1$ & $w_i(x)=0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Donc $\sum_{i\in\N} w_i(x)=\sum_{i:\,x_i\geq b_i} w_i$ : c'est le poids de la coalition des critères validés par $x$,
+c'est-à-dire son score $s(x)$. L'étudiant $x$ est admis si et seulement si
+\[
+\textstyle\sum_{i\in\N} w_i(x) \geq \lambda .
+\]
 
 % ------------------------------------------------------------------
 \subsection*{Question vii}
