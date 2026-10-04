@@ -257,8 +257,8 @@ qui restitue les 60 affectations ($\alpha^*=0.071$) :
  & crit1 & crit2 & crit3 & crit4 & crit5 \\
 \midrule
 Poids $w_i$ & $1/7$ & $2/7$ & $1/7$ & $1/7$ & $2/7$ \\
-Frontière $b^1$ (catégorie 1 / 2) & 36 & 36 & 37 & 35 & 36 \\
-Frontière $b^2$ (catégorie 2 / 3) & 42 & 50 & 37 & 44 & 50 \\
+Frontière $b^1$ (catégorie 1 / 2) & 34.5 & 35 & 33 & 34.5 & 33 \\
+Frontière $b^2$ (catégorie 2 / 3) & 41.5 & 49 & 33 & 43.5 & 49 \\
 \bottomrule
 \end{tabular}
 \qquad $\lambda = 0.643 \approx 4.5/7$
@@ -268,8 +268,9 @@ Frontière $b^2$ (catégorie 2 / 3) & 42 & 50 & 37 & 44 & 50 \\
 totalisant au moins 5 « points » sur 7 (par exemple crit2, crit5 et un autre critère). Il est en catégorie 3 s'il franchit
 $b^2$, en catégorie 2 s'il franchit $b^1$ seulement, en catégorie 1 sinon. Comme vu à la question iii, ce modèle n'est
 pas le seul compatible avec les données : d'autres paramètres donneraient les mêmes 60 affectations.
-Les frontières sont arrondies à la plus petite valeur observée au-dessus de la frontière trouvée par Gurobi, ce qui ne
-change aucune affectation. Commande : \texttt{python src/mrsort.py learn data/dataset0.csv}.
+Sur chaque critère, toute position de la frontière entre deux valeurs voisines des données donne les mêmes affectations ;
+Gurobi la place au hasard dans cet intervalle. On la recentre au milieu de l'intervalle, ce qui ne change aucune
+affectation et l'éloigne au maximum des données, pour mieux classer de nouveaux objets. Commande : \texttt{python src/mrsort.py learn data/dataset0.csv}.
 
 \subsection*{Protocole de test}
 

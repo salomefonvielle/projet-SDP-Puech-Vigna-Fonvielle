@@ -165,17 +165,21 @@ def load_learning_set(path):
     return X, y, classes
 
 
-def snap_to_data(B, X):
-    """Remplace chaque frontière b_i par la plus petite valeur observée x_i >= b_i.
+def center_frontiers(B, X):
+    """Place chaque frontière b_i au milieu de l'intervalle sans données qui l'entoure.
 
-    Aucun objet n'ayant de valeur entre les deux, les affectations du learning set
-    sont inchangées ; les frontières deviennent simplement plus lisibles.
+    Toute position dans cet intervalle donne les mêmes affectations du learning set ;
+    le milieu est la plus éloignée des données des deux côtés, donc la plus neutre
+    pour classer de nouveaux objets.
     """
     B = B.copy()
     for k in range(B.shape[0]):
         for i in range(B.shape[1]):
+            below = X[X[:, i] < B[k, i], i]
             above = X[X[:, i] >= B[k, i], i]
-            if above.size:
+            if below.size and above.size:
+                B[k, i] = (below.max() + above.min()) / 2
+            elif above.size:  # tous les objets valident : frontière au plus bas
                 B[k, i] = above.min()
     return B
 
@@ -214,7 +218,7 @@ def main():
         X, y, classes = load_learning_set(args.csv)
         p = args.p or len(classes)
         w, lam, B, alpha = learn_mrsort(X, y, p)
-        B = snap_to_data(B, X)
+        B = center_frontiers(B, X)
         acc = np.mean(classify(X, w, lam, B) == y)
         text = format_model(w, lam, B, alpha, acc, X.shape[1], p, len(y))
         print(text)
