@@ -1,11 +1,6 @@
-"""Apprentissage de modèles MR-Sort par programmation linéaire mixte (Gurobi).
-
-Conventions :
-- X : tableau (m, n) des performances, plus grand = meilleur sur chaque critère.
-- y : tableau (m,) des classes, entiers de 0 (pire) à p-1 (meilleure).
-- Un modèle MR-Sort est un triplet (w, lam, B) où B est un tableau (p-1, n) :
-  B[k] est la frontière entre la classe k et la classe k+1 (B[k] <= B[k+1]).
-"""
+# Projet SDP - apprentissage d'un modèle MR-Sort avec Gurobi
+# X : performances (m objets x n critères), y : classes de 0 à p-1
+# modèle = (w, lam, B) avec B[k] la frontière entre les classes k et k+1
 
 import time
 
@@ -14,24 +9,15 @@ import gurobipy as gp
 from gurobipy import GRB
 
 
-# ---------------------------------------------------------------------------
-# Modèle MR-Sort
-# ---------------------------------------------------------------------------
-
 def classify(X, w, lam, B):
-    """Affecte chaque objet à une classe selon le modèle MR-Sort (w, lam, B).
-
-    x est au moins dans la classe k+1 si la coalition des critères où x >= B[k]
-    pèse au moins lam. Les frontières étant ordonnées, la classe est le nombre
-    de frontières franchies.
-    """
+    # classe = nombre de frontières franchies (poids des critères validés >= lam)
     X = np.atleast_2d(X)
     scores = ((X[:, None, :] >= B[None, :, :]) * w).sum(axis=2)  # (m, p-1)
     return (scores >= lam - 1e-9).sum(axis=1)
 
 
 def random_model(n, p, rng):
-    """Tire un modèle MR-Sort aléatoire : poids, seuil et frontières ordonnées."""
+    # modèle aléatoire : poids normalisés, lam entre 0.5 et 1, frontières triées
     w = rng.random(n)
     w /= w.sum()
     lam = rng.uniform(0.5, 1.0)
@@ -40,25 +26,17 @@ def random_model(n, p, rng):
 
 
 def random_objects(m, n, rng, decimals=2):
-    """Tire m objets uniformément dans [0, 1]^n (valeurs arrondies)."""
+    # m objets au hasard dans [0,1]^n
     return np.round(rng.random((m, n)), decimals)
 
 
-# ---------------------------------------------------------------------------
-# Apprentissage (questions vii et viii)
-# ---------------------------------------------------------------------------
-
 def learn_mrsort(X, y, p, eps=1e-3, time_limit=60, verbose=False):
-    """Apprend (w, lam, B) qui restitue au mieux le learning set (X, y).
-
-    Les données sont normalisées dans [0, 1] critère par critère, ce qui permet
-    de prendre M = 2 (question v). On maximise la marge alpha (question iv).
-    """
+    # MILP de la question vii (généralisé à p classes), on maximise alpha
     X = np.asarray(X, dtype=float)
     y = np.asarray(y, dtype=int)
     m, n = X.shape
 
-    # Normalisation dans [0, 1]
+    # normalisation dans [0,1] -> M = 2 suffit
     lo, hi = X.min(axis=0), X.max(axis=0)
     span = np.where(hi > lo, hi - lo, 1.0)
     Xn = (X - lo) / span
@@ -74,13 +52,13 @@ def learn_mrsort(X, y, p, eps=1e-3, time_limit=60, verbose=False):
     alpha = model.addVar(lb=-1, ub=1, name="alpha")
 
     model.addConstr(w.sum() == 1)
-    # Frontières ordonnées : b^{k} <= b^{k+1}
+    # frontières ordonnées
     for k in range(1, p - 1):
         for i in range(n):
             model.addConstr(b[k - 1, i] <= b[k, i])
 
     def score(j, k):
-        """Ajoute delta_i(x), w_i(x) pour l'objet j et la frontière k ; renvoie s_k(x)."""
+        # variables delta et w(x) de l'objet j pour la frontière k
         d = model.addVars(n, vtype=GRB.BINARY)
         wx = model.addVars(n, lb=0, ub=1)
         for i in range(n):
@@ -94,9 +72,9 @@ def learn_mrsort(X, y, p, eps=1e-3, time_limit=60, verbose=False):
 
     for j in range(m):
         c = y[j]
-        if c >= 1:          # x doit franchir la frontière inférieure de sa classe
+        if c >= 1:  # franchit la frontière du dessous
             model.addConstr(score(j, c - 1) >= lam + alpha)
-        if c <= p - 2:      # x ne doit pas franchir la frontière supérieure
+        if c <= p - 2:  # ne franchit pas celle du dessus
             model.addConstr(score(j, c) <= lam - alpha)
 
     model.setObjective(alpha, GRB.MAXIMIZE)
@@ -107,22 +85,14 @@ def learn_mrsort(X, y, p, eps=1e-3, time_limit=60, verbose=False):
 
     w_val = np.array([w[i].X for i in range(n)])
     B_val = np.array([[b[k, i].X for i in range(n)] for k in range(p - 1)])
-    # Gurobi respecte x_i >= b_i à sa tolérance près (~1e-6) : on abaisse b de
-    # eps/2, ce qui reste sous les x validés et au-dessus des x non validés.
+    # on baisse b de eps/2 à cause de la tolérance de Gurobi (sinon x = b pose problème)
     B_val = B_val - eps / 2
-    B_val = lo + B_val * span  # retour à l'échelle d'origine
+    B_val = lo + B_val * span  # retour à l'échelle de départ
     return w_val, lam.X, B_val, alpha.X
 
 
-# ---------------------------------------------------------------------------
-# Protocole de test du Jalon 1
-# ---------------------------------------------------------------------------
-
 def run_experiment(n=4, p=2, m_train=50, m_test=1000, runs=20, seed=0, quiet=False, **kw):
-    """Génère un modèle de référence, apprend, mesure l'accord sur un jeu test.
-
-    Renvoie la liste des taux d'accord et la liste des temps de résolution.
-    """
+    # protocole du jalon 1 : modèle de référence -> learning set -> apprentissage -> test
     rng = np.random.default_rng(seed)
     scores, times = [], []
     for r in range(runs):
@@ -146,19 +116,10 @@ def run_experiment(n=4, p=2, m_train=50, m_test=1000, runs=20, seed=0, quiet=Fal
     return scores, times
 
 
-# ---------------------------------------------------------------------------
-# Lecture d'un learning set et ligne de commande
-# ---------------------------------------------------------------------------
-
 def load_learning_set(path):
-    """Lit un CSV : une ligne par objet, les n premières colonnes sont les
-    performances, la dernière est la classe. Une ligne d'en-tête est tolérée.
-
-    Les classes peuvent être des entiers quelconques (0..p-1, 1..p, ...) : elles
-    sont renumérotées de 0 à p-1 dans l'ordre croissant.
-    """
+    # CSV : n colonnes de performances puis la classe (classes renumérotées de 0 à p-1)
     raw = np.genfromtxt(path, delimiter=",", dtype=float)
-    raw = raw[~np.isnan(raw).any(axis=1)]  # retire l'en-tête éventuel
+    raw = raw[~np.isnan(raw).any(axis=1)]  # enlève l'en-tête
     X, labels = raw[:, :-1], raw[:, -1]
     classes = np.unique(labels)
     y = np.searchsorted(classes, labels)
@@ -166,12 +127,8 @@ def load_learning_set(path):
 
 
 def center_frontiers(B, X):
-    """Place chaque frontière b_i au milieu de l'intervalle sans données qui l'entoure.
-
-    Toute position dans cet intervalle donne les mêmes affectations du learning set ;
-    le milieu est la plus éloignée des données des deux côtés, donc la plus neutre
-    pour classer de nouveaux objets.
-    """
+    # met chaque frontière au milieu entre la valeur juste en dessous et celle juste
+    # au-dessus (les affectations ne changent pas)
     B = B.copy()
     for k in range(B.shape[0]):
         for i in range(B.shape[1]):
@@ -179,7 +136,7 @@ def center_frontiers(B, X):
             above = X[X[:, i] >= B[k, i], i]
             if below.size and above.size:
                 B[k, i] = (below.max() + above.min()) / 2
-            elif above.size:  # tous les objets valident : frontière au plus bas
+            elif above.size:
                 B[k, i] = above.min()
     return B
 

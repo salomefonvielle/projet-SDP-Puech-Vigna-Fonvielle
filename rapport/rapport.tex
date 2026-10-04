@@ -67,24 +67,23 @@ $\{1,2,3\}$ & $1$ : gagnante & $1$ : gagnante \\
 Dans les deux cas, un étudiant est admis si et seulement s'il valide \emph{au moins 2 cours sur 3} :
 les deux jeux de paramètres définissent la même règle.
 
-\textbf{Conclusion.} $(w,\lambda)$ n'est pas unique : seul compte l'ensemble des coalitions gagnantes.
-Les poids ne mesurent pas l'importance (le cours 3, de poids $0.02$, est aussi décisif que les autres) ;
-un modèle appris s'évalue donc sur ses décisions, pas sur ses paramètres.
+On en conclut que $(w,\lambda)$ n'est pas unique : ce qui compte, ce sont les coalitions gagnantes. Les poids ne
+donnent pas directement l'importance d'un cours (le cours 3 ne pèse que $0.02$ mais il est aussi décisif que les autres).
+Pour juger un modèle appris, il faut donc regarder ses décisions plutôt que ses paramètres.
 
 % ------------------------------------------------------------------
 \subsection*{Question iv}
 
-Comme $b$ est connu, on sait pour chaque objet $x$ quels critères il valide : $C(x)=\{i\in\N : x_i\geq b_i\}$.
-Son score $s(x)=\sum_{i\in C(x)} w_i$ est donc linéaire en $w$.
-\textbf{Variables :} $w_i\geq 0$, $\lambda\in[0,1]$ et $\alpha$, la marge.
+$b$ étant connu, on connaît pour chaque objet $x$ l'ensemble des critères qu'il valide, $C(x)=\{i\in\N : x_i\geq b_i\}$,
+et son score $s(x)=\sum_{i\in C(x)} w_i$ est linéaire en $w$. Les variables sont les $w_i\geq 0$, $\lambda\in[0,1]$ et une marge $\alpha$.
 \begin{align*}
 \max\ & \alpha \\
 \text{s.c.}\ & s(x) \geq \lambda + \alpha && \forall x\in A^* \\
 & s(x) \leq \lambda - \alpha && \forall x\in R^* \\
 & \textstyle\sum_{i\in\N} w_i = 1
 \end{align*}
-$\alpha$ est l'écart minimal entre les scores et le seuil $\lambda$ : on cherche le modèle qui sépare le plus nettement
-acceptés et rejetés. Si $\alpha^*>0$, tous les objets sont bien classés ; sinon, aucun modèle ne restitue parfaitement les données.
+$\alpha$ est le plus petit écart entre un score et $\lambda$ : en le maximisant, on éloigne le plus possible les acceptés et
+les rejetés du seuil. Si $\alpha^*>0$, tous les objets sont bien classés, sinon aucun modèle ne colle parfaitement aux données.
 
 \begin{center}
 \begin{tikzpicture}[x=26cm,y=1cm,font=\small]
@@ -98,22 +97,22 @@ acceptés et rejetés. Si $\alpha^*>0$, tous les objets sont bien classés ; sin
   \foreach \v/\n in {0.75/Alice,1.0/David} \fill[green!50!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
 \end{tikzpicture}
 
-\footnotesize Exemple de la question i : rejetés en rouge, acceptés en vert.
+\footnotesize Scores des étudiants de la question i (rejetés en rouge, acceptés en vert).
 \end{center}
 
 % ------------------------------------------------------------------
 \subsection*{Question v}
 
-On veut $\delta_i(x)=\mathds{1}_{\{x_i\geq b_i\}}$. Si $b$ était connu, ce serait une donnée ; mais $b_i$ est une variable,
-et cette indicatrice est une fonction en escalier de $b_i$, qu'on ne peut pas écrire telle quelle dans un programme linéaire.
-On l'impose par deux contraintes linéaires, une pour chaque sens de l'équivalence ($\forall i\in\N$, $\forall x$) :
+On veut $\delta_i(x)=\mathds{1}_{\{x_i\geq b_i\}}$. Ici $b_i$ est une variable, donc cette indicatrice (une fonction en escalier
+de $b_i$) n'est pas linéaire. On l'écrit avec deux contraintes, une par sens de l'équivalence ($\forall i\in\N$, $\forall x$) :
 \begin{align*}
 x_i-b_i &\geq M\,(\delta_i(x)-1) &\qquad (1)\quad \delta_i(x)=1 \Rightarrow x_i\geq b_i \\
 x_i-b_i &\leq M\,\delta_i(x)-\varepsilon &\qquad (2)\quad \delta_i(x)=0 \Rightarrow x_i< b_i
 \end{align*}
-On suppose les données normalisées dans $[0,1]$ sur chaque critère (transformation croissante, qui ne change pas
-les affectations). Alors $b_i\in[0,1]$, $|x_i-b_i|\leq 1$, et $M=2$ suffit pour que la contrainte qui ne doit pas jouer
-soit toujours vraie. $\varepsilon>0$ petit remplace l'inégalité stricte.
+On normalise les données dans $[0,1]$ sur chaque critère, ce qui ne change pas les affectations. On a alors
+$-1\leq x_i-b_i\leq 1$, donc avec $M=2$ la contrainte qui ne correspond pas à la valeur de $\delta_i(x)$ est toujours
+vérifiée. Comme le solveur ne gère pas les inégalités strictes, on écrit $x_i<b_i$ sous la forme $x_i\leq b_i-\varepsilon$,
+avec $\varepsilon$ plus petit que l'écart entre deux valeurs voisines des données.
 
 \begin{center}
 \begin{tabular}{cccc}
@@ -134,8 +133,7 @@ On veut $w_i(x)=w_i\,\delta_i(x)$ : c'est un produit de deux variables, donc non
 w_i \geq w_i(x) &\geq 0 && (3)\\
 \delta_i(x) \geq w_i(x) &\geq \delta_i(x)+w_i-1 && (4)
 \end{align*}
-remplacent ce produit. On vérifie les deux cas ; les bornes non citées sont toujours vraies car $0\leq w_i\leq 1$
-($w_i\geq 0$ et $\sum_i w_i=1$) :
+remplacent ce produit. On vérifie les deux cas (les autres bornes sont toujours vraies car $0\leq w_i\leq 1$) :
 
 \begin{center}
 \begin{tabular}{cccc}
@@ -148,8 +146,8 @@ $\delta_i(x)=0$ & $w_i(x)\geq 0$ \ (3) & $w_i(x)\leq 0$ \ (4) & $w_i(x)=0$ \\
 \end{tabular}
 \end{center}
 
-Donc $\displaystyle\sum_{i\in\N} w_i(x)=\sum_{i:\,x_i\geq b_i} w_i = s(x)$ : c'est le poids de la coalition des critères
-validés par $x$, c'est-à-dire son score. L'étudiant $x$ est admis si et seulement si
+Donc $\displaystyle\sum_{i\in\N} w_i(x)=\sum_{i:\,x_i\geq b_i} w_i = s(x)$, le poids des critères validés par $x$.
+L'étudiant $x$ est admis si et seulement si
 \[
 s(x)=\sum_{i\in\N} w_i(x) \geq \lambda .
 \]
@@ -157,12 +155,11 @@ s(x)=\sum_{i\in\N} w_i(x) \geq \lambda .
 % ------------------------------------------------------------------
 \subsection*{Question vii}
 
-Les questions v et vi permettent d'écrire le score sans connaître $b$ :
+Grâce aux questions v et vi, on peut écrire le score sans connaître $b$ :
 \[
 s(x)=\sum_{i\in\N} w_i\,\delta_i(x)=\sum_{i\in\N} w_i(x).
 \]
-On reprend donc le PL de la question iv avec ce score, en ajoutant les contraintes (1) à (4) qui le définissent.
-Les données sont normalisées dans $[0,1]$, $M=2$ et $\varepsilon>0$ petit.
+On reprend le PL de la question iv avec ce score et on ajoute les contraintes (1) à (4) ($M=2$, $\varepsilon$ petit).
 
 \medskip
 \textbf{Variables.}
@@ -186,25 +183,22 @@ Les données sont normalisées dans $[0,1]$, $M=2$ et $\varepsilon>0$ petit.
 \end{align*}
 
 \medskip
-Les variables $\delta_i(x)$ étant binaires, c'est un programme linéaire mixte en nombres entiers (MILP), avec
-$n\,|A^*\cup R^*|$ variables binaires. Comme à la question iv, $\alpha^*>0$ signifie que le modèle appris restitue
-tout le learning set.
+Les $\delta_i(x)$ sont binaires, c'est donc un programme linéaire en nombres entiers (MILP) avec $n\,|A^*\cup R^*|$
+variables binaires. Comme en iv, si $\alpha^*>0$ le modèle appris restitue tout le learning set.
 
 % ------------------------------------------------------------------
 \subsection*{Question viii -- Résolution avec Gurobi}
 
-Voir la partie \emph{Jalon 1} ci-dessous : implémentation, exemple et protocole de test.
+Voir la partie Jalon 1.
 
 % ------------------------------------------------------------------
 \subsection*{Question viii bis -- Généralisation à $p$ catégories}
 
-Les catégories sont ordonnées, de $\mathcal{C}^1$ (la pire) à $\mathcal{C}^p$ (la meilleure). On apprend $p-1$ frontières
-$b^1,\dots,b^{p-1}$ : $b^h$ sépare $\mathcal{C}^h$ de $\mathcal{C}^{h+1}$. Les poids $w$ et le seuil $\lambda$ sont communs à toutes les frontières.
-Un objet $x$ est dans $\mathcal{C}^h$ s'il franchit la frontière inférieure $b^{h-1}$ mais pas la frontière supérieure $b^h$ :
-on applique à chaque frontière le raisonnement à deux classes.
-
-On définit donc $\delta^h_i(x)$ et $w^h_i(x)$ pour chaque frontière $h$, avec les contraintes (1) à (4) où $b$ est remplacé par $b^h$.
-Le score de $x$ par rapport à $b^h$ est $s_h(x)=\sum_{i\in\N} w^h_i(x)$.
+Les catégories vont de $\mathcal{C}^1$ (la pire) à $\mathcal{C}^p$ (la meilleure) et on cherche $p-1$ frontières
+$b^1,\dots,b^{p-1}$, $b^h$ séparant $\mathcal{C}^h$ et $\mathcal{C}^{h+1}$. Les poids et $\lambda$ sont les mêmes pour toutes les
+frontières, seules les valeurs $b^h_i$ changent. Un objet est dans $\mathcal{C}^h$ s'il franchit $b^{h-1}$ mais pas $b^h$.
+On reprend donc les variables $\delta^h_i(x)$, $w^h_i(x)$ et les contraintes (1) à (4) pour chaque frontière $h$,
+avec le score $s_h(x)=\sum_{i\in\N} w^h_i(x)$.
 
 \medskip
 \textbf{Programme.}
@@ -218,38 +212,23 @@ Le score de $x$ par rapport à $b^h$ est $s_h(x)=\sum_{i\in\N} w^h_i(x)$.
 \end{align*}
 
 \medskip
-Pour $p=2$, on retrouve le programme de la question vii. En pratique, seules les frontières $b^{h-1}$ et $b^h$ qui
-encadrent la catégorie de $x$ interviennent dans ses contraintes : on ne crée $\delta^h_i(x)$ et $w^h_i(x)$ que pour ces deux
-frontières, soit au plus $2n$ variables binaires par objet. C'est ce que fait \texttt{learn\_mrsort} (résultats pour $p=3$ dans la partie Jalon 1).
+Pour $p=2$ on retrouve la question vii. Pour un objet de $\mathcal{C}^h$, seules $b^{h-1}$ et $b^h$ apparaissent dans ses
+contraintes, donc dans le code on ne crée les variables que pour ces deux frontières (au plus $2n$ binaires par objet).
 
 % ==================================================================
 \section*{Jalon 1 : implémentation et validation}
 
 \subsection*{Le programme}
 
-Le MILP de la question vii, généralisé à $p$ catégories (question viii bis), est implémenté en Python avec
-\texttt{gurobipy} dans le fichier \texttt{src/mrsort.py} (code et mode d'emploi sur le dépôt du projet).
-\begin{itemize}
-  \item \textbf{Entrée :} un learning set, fichier CSV avec une ligne par objet : les $n$ performances, puis la classe.
-        Le nombre de critères $n$ et le nombre de catégories $p$ sont déduits du fichier (ou $p$ est donné).
-  \item \textbf{Traitement :} normalisation des données dans $[0,1]$, construction du MILP, résolution par Gurobi.
-  \item \textbf{Sortie :} les poids $w$, le seuil $\lambda$, les frontières $b^1,\dots,b^{p-1}$ (dans l'échelle d'origine),
-        la marge $\alpha^*$ et le taux de restitution du learning set.
-\end{itemize}
-Commande : \texttt{python src/mrsort.py learn learning\_set.csv}.
-
-\subsection*{Exemple}
-
-Learning set de 60 étudiants notés sur 20 dans 4 cours, répartis en 3 catégories par un modèle de référence.
-Le programme trouve en moins d'une seconde un modèle qui restitue les 60 affectations ($\alpha^*=0.1$).
-Ses frontières sont proches de celles du modèle de référence sans être identiques
-(par exemple $b^1=(8.1,\ 7.5,\ 15.4,\ 2.5)$ contre $(9.0,\ 7.4,\ 15.7,\ 2.6)$) : comme vu à la question iii,
-plusieurs modèles expliquent les mêmes données.
+Le MILP (cas à $p$ catégories) est codé en Python avec \texttt{gurobipy}, dans \texttt{src/mrsort.py}.
+Le programme lit un learning set au format CSV (une ligne par objet : les $n$ performances puis la classe), en déduit
+$n$ et $p$, normalise les données, résout le MILP et affiche $w$, $\lambda$, les frontières (dans l'échelle d'origine),
+$\alpha^*$ et le taux de bonne classification sur le learning set.
 
 \subsection*{Modèle appris sur Dataset0}
 
-Dataset0 : 60 objets, 5 critères à maximiser, 3 catégories. Le programme trouve en moins d'une seconde un modèle
-qui restitue les 60 affectations ($\alpha^*=0.071$) :
+Dataset0 contient 60 objets, 5 critères à maximiser et 3 catégories. On obtient en moins d'une seconde un modèle
+qui classe correctement les 60 objets ($\alpha^*=0.071$) :
 
 \begin{center}
 \begin{tabular}{lccccc}
@@ -264,17 +243,14 @@ Frontière $b^2$ (catégorie 2 / 3) & 41.5 & 49 & 33 & 43.5 & 49 \\
 \qquad $\lambda = 0.643 \approx 4.5/7$
 \end{center}
 
-\textbf{Lecture.} Les critères 2 et 5 comptent double. Un objet franchit une frontière s'il l'atteint sur des critères
-totalisant au moins 5 « points » sur 7 (par exemple crit2, crit5 et un autre critère). Il est en catégorie 3 s'il franchit
-$b^2$, en catégorie 2 s'il franchit $b^1$ seulement, en catégorie 1 sinon. Comme vu à la question iii, ce modèle n'est
-pas le seul compatible avec les données : d'autres paramètres donneraient les mêmes 60 affectations.
-Sur chaque critère, toute position de la frontière entre deux valeurs voisines des données donne les mêmes affectations ;
-Gurobi la place au hasard dans cet intervalle. On la recentre au milieu de l'intervalle, ce qui ne change aucune
-affectation et l'éloigne au maximum des données, pour mieux classer de nouveaux objets. Commande : \texttt{python src/mrsort.py learn data/dataset0.csv}.
+Les critères 2 et 5 comptent double : pour franchir une frontière, il faut l'atteindre sur des critères qui totalisent
+au moins 5 points sur 7 (par exemple crit2, crit5 et un troisième). Ce modèle n'est pas le seul possible (cf. question iii).
+Sur chaque critère, la frontière peut être n'importe où entre deux valeurs voisines des données sans changer les affectations ;
+on l'a placée au milieu de cet intervalle pour qu'elle soit le plus loin possible des données.
 
 \subsection*{Protocole de test}
 
-Pour mesurer la qualité de l'apprentissage, on part d'un modèle connu et on vérifie qu'on le retrouve :
+Pour voir si le programme apprend bien, on part d'un modèle connu et on regarde si on le retrouve :
 \begin{enumerate}
   \item On tire au hasard un modèle MR-Sort de référence $\mathcal{M}'$ : poids, $\lambda\in[0.5,1]$, frontières ordonnées.
   \item On tire $|L|$ objets aléatoires dans $[0,1]^4$ et on les classe avec $\mathcal{M}'$ : c'est le learning set $L$.
@@ -282,9 +258,8 @@ Pour mesurer la qualité de l'apprentissage, on part d'un modèle connu et on v�
   \item On tire 1000 nouveaux objets $T$, jamais vus, et on les classe avec $\mathcal{M}'$ et $\mathcal{M}^*$.
         La \emph{qualité} est la proportion d'objets affectés à la même classe.
 \end{enumerate}
-On répète 20 fois et on fait la moyenne. On teste sur des objets nouveaux car, sur $L$, la restitution est
-parfaite par construction : la vraie question est de savoir si $\mathcal{M}^*$ décide comme $\mathcal{M}'$ sur des cas inconnus.
-Commande : \texttt{python src/mrsort.py test -n 4 -p 2 -m 50 -{}-runs 20}.
+On répète 20 fois et on fait la moyenne. On teste sur de nouveaux objets parce que sur $L$ le modèle appris est
+correct à 100\,\% par construction.
 
 \subsection*{Résultats}
 
@@ -302,8 +277,8 @@ $p$ & $|L|$ & Qualité moyenne sur $T$ & Écart-type & Temps moyen \\
 \end{tabular}
 \end{center}
 
-Dans les 100 essais, $\alpha^*>0$ et le learning set est restitué à 100\,\%. La qualité sur $T$ augmente avec $|L|$ :
-plus il y a d'exemples, plus les frontières et les coalitions gagnantes sont contraintes, et plus $\mathcal{M}^*$ se rapproche
-de $\mathcal{M}'$. Avec 3 catégories, il faut plus d'exemples pour une qualité comparable, car il y a deux frontières à apprendre.
+Dans les 100 essais, le learning set est bien classé à 100\,\%. La qualité sur $T$ augmente avec la taille de $L$ :
+avec plus d'exemples, les frontières sont mieux encadrées et $\mathcal{M}^*$ se rapproche de $\mathcal{M}'$. Avec 3 catégories
+il faut plus d'exemples, puisqu'il y a deux frontières à apprendre.
 
 \end{document}
