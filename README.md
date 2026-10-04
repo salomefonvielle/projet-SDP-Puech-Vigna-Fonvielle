@@ -4,9 +4,10 @@ Côme-Alexis Puech, Hugo Vigna, Salomé Fonvielle — CentraleSupélec, mention 
 
 ```
 sujet/     énoncé du projet
-rapport/   rapport LaTeX et PDF déposés sur Edunao (Jalon1_Puech_Vigna_Fonvielle.pdf)
+rapport/   rapport LaTeX, PDF et archive déposés sur Edunao
 src/       mrsort.py : apprentissage MR-Sort par programmation linéaire mixte (Gurobi)
-data/      learning sets (exemple : 4 critères notés sur 20, 3 catégories)
+data/      learning sets : dataset0.csv (fourni, 5 critères, 3 catégories) et un exemple
+resultats/ paramètres du modèle appris sur Dataset0
 tp0/       prise en main de Gurobi : exercices P1 à P4 du notebook TP0
 ```
 
@@ -25,7 +26,7 @@ Apprendre un modèle à partir d'un learning set CSV (n colonnes de performances
 en-tête facultatif ; n et p sont déduits du fichier) :
 
 ```bash
-.venv/bin/python src/mrsort.py learn data/exemple_learning_set.csv
+.venv/bin/python src/mrsort.py learn data/dataset0.csv -o resultats/modele_dataset0.txt
 ```
 
 Protocole de test du Jalon 1 (modèle de référence aléatoire, apprentissage, accord sur 1000 objets test,

@@ -246,6 +246,31 @@ Ses frontières sont proches de celles du modèle de référence sans être iden
 (par exemple $b^1=(8.1,\ 7.5,\ 15.4,\ 2.5)$ contre $(9.0,\ 7.4,\ 15.7,\ 2.6)$) : comme vu à la question iii,
 plusieurs modèles expliquent les mêmes données.
 
+\subsection*{Modèle appris sur Dataset0}
+
+Dataset0 : 60 objets, 5 critères à maximiser, 3 catégories. Le programme trouve en moins d'une seconde un modèle
+qui restitue les 60 affectations ($\alpha^*=0.071$) :
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+ & crit1 & crit2 & crit3 & crit4 & crit5 \\
+\midrule
+Poids $w_i$ & $1/7$ & $2/7$ & $1/7$ & $1/7$ & $2/7$ \\
+Frontière $b^1$ (catégorie 1 / 2) & 36 & 36 & 37 & 35 & 36 \\
+Frontière $b^2$ (catégorie 2 / 3) & 42 & 50 & 37 & 44 & 50 \\
+\bottomrule
+\end{tabular}
+\qquad $\lambda = 0.643 \approx 4.5/7$
+\end{center}
+
+\textbf{Lecture.} Les critères 2 et 5 comptent double. Un objet franchit une frontière s'il l'atteint sur des critères
+totalisant au moins 5 « points » sur 7 (par exemple crit2, crit5 et un autre critère). Il est en catégorie 3 s'il franchit
+$b^2$, en catégorie 2 s'il franchit $b^1$ seulement, en catégorie 1 sinon. Comme vu à la question iii, ce modèle n'est
+pas le seul compatible avec les données : d'autres paramètres donneraient les mêmes 60 affectations.
+Les frontières sont arrondies à la plus petite valeur observée au-dessus de la frontière trouvée par Gurobi, ce qui ne
+change aucune affectation. Commande : \texttt{python src/mrsort.py learn data/dataset0.csv}.
+
 \subsection*{Protocole de test}
 
 Pour mesurer la qualité de l'apprentissage, on part d'un modèle connu et on vérifie qu'on le retrouve :

@@ -165,6 +165,31 @@ def load_learning_set(path):
     return X, y, classes
 
 
+def snap_to_data(B, X):
+    """Remplace chaque frontière b_i par la plus petite valeur observée x_i >= b_i.
+
+    Aucun objet n'ayant de valeur entre les deux, les affectations du learning set
+    sont inchangées ; les frontières deviennent simplement plus lisibles.
+    """
+    B = B.copy()
+    for k in range(B.shape[0]):
+        for i in range(B.shape[1]):
+            above = X[X[:, i] >= B[k, i], i]
+            if above.size:
+                B[k, i] = above.min()
+    return B
+
+
+def format_model(w, lam, B, alpha, acc, n, p, m):
+    lines = [f"n = {n} critères, p = {p} catégories, {m} objets",
+             "poids w      = " + "  ".join(f"{v:.3f}" for v in w),
+             f"seuil lambda = {lam:.3f}"]
+    for k in range(p - 1):
+        lines.append(f"frontière b^{k + 1} = " + "  ".join(f"{v:g}" for v in B[k]))
+    lines.append(f"marge alpha = {alpha:.3f}, restitution du learning set = {acc:.1%}")
+    return "\n".join(lines)
+
+
 def main():
     import argparse
 
@@ -175,6 +200,8 @@ def main():
     p_learn.add_argument("csv")
     p_learn.add_argument("-p", type=int, default=None,
                          help="nombre de catégories (par défaut : déduit des données)")
+    p_learn.add_argument("-o", "--out", default=None,
+                         help="fichier texte où enregistrer les paramètres appris")
 
     p_test = sub.add_parser("test", help="protocole de test du Jalon 1")
     p_test.add_argument("-n", type=int, default=4, help="nombre de critères")
@@ -187,14 +214,13 @@ def main():
         X, y, classes = load_learning_set(args.csv)
         p = args.p or len(classes)
         w, lam, B, alpha = learn_mrsort(X, y, p)
+        B = snap_to_data(B, X)
         acc = np.mean(classify(X, w, lam, B) == y)
-        np.set_printoptions(precision=3, suppress=True)
-        print(f"n = {X.shape[1]} critères, p = {p} catégories, {len(y)} objets")
-        print(f"poids w     = {w}")
-        print(f"seuil lambda = {lam:.3f}")
-        for k in range(p - 1):
-            print(f"frontière b^{k + 1} = {B[k]}")
-        print(f"marge alpha = {alpha:.3f}, restitution du learning set = {acc:.1%}")
+        text = format_model(w, lam, B, alpha, acc, X.shape[1], p, len(y))
+        print(text)
+        if args.out:
+            with open(args.out, "w", encoding="utf-8") as f:
+                f.write(f"Modèle MR-Sort appris sur {args.csv}\n" + text + "\n")
     else:
         run_experiment(n=args.n, p=args.p, m_train=args.m, runs=args.runs)
 

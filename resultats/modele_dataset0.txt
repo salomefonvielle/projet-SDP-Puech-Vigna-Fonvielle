@@ -1,0 +1,7 @@
+Modèle MR-Sort appris sur data/dataset0.csv
+n = 5 critères, p = 3 catégories, 60 objets
+poids w      = 0.143  0.286  0.143  0.143  0.286
+seuil lambda = 0.643
+frontière b^1 = 36  36  37  35  36
+frontière b^2 = 42  50  37  44  50
+marge alpha = 0.071, restitution du learning set = 100.0%
