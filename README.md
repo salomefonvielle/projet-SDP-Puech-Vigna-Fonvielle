@@ -4,7 +4,7 @@ Côme-Alexis Puech, Hugo Vigna, Salomé Fonvielle — CentraleSupélec, mention 
 
 ```
 sujet/     énoncé du projet
-rapport/   rapport LaTeX, PDF et archive déposés sur Edunao
+rapport/   rapport LaTeX ; Jalon1_Puech_Vigna_Fonvielle/ et .zip = livrable déposé sur Edunao
 src/       mrsort.py : apprentissage MR-Sort par programmation linéaire mixte (Gurobi)
 data/      learning sets : dataset0.csv (fourni, 5 critères, 3 catégories) et un exemple
 resultats/ paramètres du modèle appris sur Dataset0
