@@ -18,7 +18,7 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-Une licence Gurobi (académique gratuite) est nécessaire au-delà de 2000 variables.
+Une licence Gurobi (académique gratuite) est nécessaire au-delà de 2000 variables ou 2000 contraintes (le MILP de dataset0 a environ 2200 contraintes).
 
 ## Utilisation
 

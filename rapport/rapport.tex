@@ -28,83 +28,33 @@
 
 \maketitle
 
-\section*{Préliminaires : admission d'étudiants}
+Ce rapport présente notre programme pour le Jalon 1, qui apprend les paramètres d'un modèle MR-Sort à partir
+d'un learning set en résolvant un MILP avec Gurobi. La première partie construit ce MILP, la seconde décrit son
+implémentation et sa validation. Les réponses détaillées aux questions préliminaires i à iv, sur l'exemple de
+l'admission d'étudiants, sont en annexe.
 
-% ------------------------------------------------------------------
-\subsection*{Question i}
+\section*{Formulation du MILP}
 
-Somme des poids des cours validés ($\geq 12$), avec $w=(0.25,0.15,0.2,0.4)$, $\lambda=0.66$ :
-Alice $0.15+0.2+0.4=0.75$ ($\A$), Bob $0.25+0.15+0.2=0.60$ ($\R$),
-Charlie $0.15+0.4=0.55$ ($\R$), David $1$ ($\A$).
-Bob ne peut pas améliorer sa situation : avec 12 en physique, ce cours est déjà validé,
-une meilleure note n'y change rien.
+Cette partie reprend le raisonnement des questions iv à viii bis du sujet.
 
-% ------------------------------------------------------------------
-\subsection*{Question ii}
+\subsection*{Maximiser une marge}
 
-Les 4 cours doivent jouer des rôles symétriques (3 cours quelconques suffisent), d'où
-$w_M=w_P=w_L=w_H=\frac14$ et $\lambda\in\left]\frac12,\frac34\right]$, par exemple $\lambda=0.75$ :
-3 cours pèsent $\frac34\geq\lambda$, 2 cours pèsent $\frac12<\lambda$.
+Avec deux catégories, on note $A^*$ et $R^*$ les objets acceptés et rejetés du learning set, et $s(x)=\sum_{i:\,x_i\geq b_i} w_i$
+le score de $x$, c'est-à-dire le poids des critères sur lesquels il atteint la frontière $b$. Le modèle classe bien $x$ si
+$s(x)\geq\lambda$ pour $x\in A^*$ et $s(x)<\lambda$ pour $x\in R^*$. On cherche donc $w$ et $\lambda$ qui maximisent une marge
+$\alpha$, le plus petit écart entre un score et $\lambda$ :
+\[
+\max\ \alpha \quad\text{s.c.}\quad s(x)\geq\lambda+\alpha\ \ (x\in A^*),\qquad s(x)\leq\lambda-\alpha\ \ (x\in R^*),\qquad \textstyle\sum_{i\in\N} w_i=1 .
+\]
+Si $\alpha^*>0$, tous les objets sont bien classés, sinon aucun modèle ne colle parfaitement aux données.
+Quand $b$ est connu, $s(x)$ est linéaire en $w$ et c'est un simple PL. Pour apprendre aussi $b$, il faut exprimer
+$s(x)$ de façon linéaire en fonction de $b$.
 
-% ------------------------------------------------------------------
-\subsection*{Question iii}
+\subsection*{Linéarisation pour apprendre les frontières}
 
-Coalitions gagnantes (somme des poids $\geq \lambda$) dans les deux cas :
-
-\begin{center}
-\begin{tabular}{lcc}
-\toprule
-Coalition & $w = (0.49, 0.49, 0.02)$, $\lambda=0.5$ & $w = (\frac13,\frac13,\frac13)$, $\lambda=0.5$ \\
-\midrule
-$\{1\}$, $\{2\}$, $\{3\}$ & $0.49,\ 0.49,\ 0.02$ : perdantes & $0.33$ : perdantes \\
-$\{1,2\}$ & $0.98$ : gagnante & $0.67$ : gagnante \\
-$\{1,3\}$, $\{2,3\}$ & $0.51$ : gagnantes & $0.67$ : gagnantes \\
-$\{1,2,3\}$ & $1$ : gagnante & $1$ : gagnante \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Dans les deux cas, un étudiant est admis si et seulement s'il valide \emph{au moins 2 cours sur 3} :
-les deux jeux de paramètres définissent la même règle.
-
-On en conclut que $(w,\lambda)$ n'est pas unique : ce qui compte, ce sont les coalitions gagnantes. Les poids ne
-donnent pas directement l'importance d'un cours (le cours 3 ne pèse que $0.02$ mais il est aussi décisif que les autres).
-Pour juger un modèle appris, il faut donc regarder ses décisions plutôt que ses paramètres.
-
-% ------------------------------------------------------------------
-\subsection*{Question iv}
-
-$b$ étant connu, on connaît pour chaque objet $x$ l'ensemble des critères qu'il valide, $C(x)=\{i\in\N : x_i\geq b_i\}$,
-et son score $s(x)=\sum_{i\in C(x)} w_i$ est linéaire en $w$. Les variables sont les $w_i\geq 0$, $\lambda\in[0,1]$ et une marge $\alpha$.
-\begin{align*}
-\max\ & \alpha \\
-\text{s.c.}\ & s(x) \geq \lambda + \alpha && \forall x\in A^* \\
-& s(x) \leq \lambda - \alpha && \forall x\in R^* \\
-& \textstyle\sum_{i\in\N} w_i = 1
-\end{align*}
-$\alpha$ est le plus petit écart entre un score et $\lambda$ : en le maximisant, on éloigne le plus possible les acceptés et
-les rejetés du seuil. Si $\alpha^*>0$, tous les objets sont bien classés, sinon aucun modèle ne colle parfaitement aux données.
-
-\begin{center}
-\begin{tikzpicture}[x=26cm,y=1cm,font=\small]
-  \fill[gray!15] (0.60,-0.15) rectangle (0.75,0.9);
-  \draw[->] (0.48,0) -- (1.03,0) node[right] {$s(x)$};
-  \foreach \t in {0.5,0.6,0.7,0.8,0.9,1.0} \draw (\t,0.06) -- (\t,-0.06) node[below] {\footnotesize\t};
-  \draw[dashed,thick] (0.675,-0.15) -- (0.675,1.15) node[above] {$\lambda$};
-  \draw[<->] (0.60,0.7) -- node[above] {$\alpha$} (0.675,0.7);
-  \draw[<->] (0.675,0.7) -- node[above] {$\alpha$} (0.75,0.7);
-  \foreach \v/\n in {0.55/Charlie,0.60/Bob} \fill[red!75!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
-  \foreach \v/\n in {0.75/Alice,1.0/David} \fill[green!50!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
-\end{tikzpicture}
-
-\footnotesize Scores des étudiants de la question i (rejetés en rouge, acceptés en vert).
-\end{center}
-
-% ------------------------------------------------------------------
-\subsection*{Question v}
-
-On veut $\delta_i(x)=\mathds{1}_{\{x_i\geq b_i\}}$. Ici $b_i$ est une variable, donc cette indicatrice (une fonction en escalier
-de $b_i$) n'est pas linéaire. On l'écrit avec deux contraintes, une par sens de l'équivalence ($\forall i\in\N$, $\forall x$) :
+\textbf{Variables $\delta_i(x)$.} Pour savoir si $x$ valide le critère $i$, on introduit une variable binaire $\delta_i(x)=\mathds{1}_{\{x_i\geq b_i\}}$. Comme $b_i$ est
+une variable, cette indicatrice n'est pas linéaire. On l'impose avec deux contraintes, une par sens de l'équivalence
+($\forall i\in\N$, $\forall x$) :
 \begin{align*}
 x_i-b_i &\geq M\,(\delta_i(x)-1) &\qquad (1)\quad \delta_i(x)=1 \Rightarrow x_i\geq b_i \\
 x_i-b_i &\leq M\,\delta_i(x)-\varepsilon &\qquad (2)\quad \delta_i(x)=0 \Rightarrow x_i< b_i
@@ -125,15 +75,13 @@ $\delta_i(x)=0$ & $x_i-b_i\geq -M$ \ (toujours vraie) & $x_i-b_i\leq-\varepsilon
 \end{tabular}
 \end{center}
 
-% ------------------------------------------------------------------
-\subsection*{Question vi}
-
-On veut $w_i(x)=w_i\,\delta_i(x)$ : c'est un produit de deux variables, donc non linéaire. Les contraintes
+\textbf{Variables $w_i(x)$.} Le score s'écrit alors $s(x)=\sum_{i\in\N} w_i\,\delta_i(x)$, mais $w_i\,\delta_i(x)$ est un produit
+de deux variables. On le remplace par une variable $w_i(x)\geq 0$ et les contraintes
 \begin{align*}
 w_i \geq w_i(x) &\geq 0 && (3)\\
 \delta_i(x) \geq w_i(x) &\geq \delta_i(x)+w_i-1 && (4)
 \end{align*}
-remplacent ce produit. On vérifie les deux cas (les autres bornes sont toujours vraies car $0\leq w_i\leq 1$) :
+qui forcent $w_i(x)=w_i\,\delta_i(x)$ (les autres bornes sont toujours vraies car $0\leq w_i\leq 1$) :
 
 \begin{center}
 \begin{tabular}{cccc}
@@ -146,25 +94,16 @@ $\delta_i(x)=0$ & $w_i(x)\geq 0$ \ (3) & $w_i(x)\leq 0$ \ (4) & $w_i(x)=0$ \\
 \end{tabular}
 \end{center}
 
-Donc $\displaystyle\sum_{i\in\N} w_i(x)=\sum_{i:\,x_i\geq b_i} w_i = s(x)$, le poids des critères validés par $x$.
-L'étudiant $x$ est admis si et seulement si
-\[
-s(x)=\sum_{i\in\N} w_i(x) \geq \lambda .
-\]
+Le score $s(x)=\sum_{i\in\N} w_i(x)$ est donc linéaire, et on n'a plus besoin de connaître $b$ à l'avance.
 
-% ------------------------------------------------------------------
-\subsection*{Question vii}
+\subsection*{Le MILP à deux catégories}
 
-Grâce aux questions v et vi, on peut écrire le score sans connaître $b$ :
-\[
-s(x)=\sum_{i\in\N} w_i\,\delta_i(x)=\sum_{i\in\N} w_i(x).
-\]
-On reprend le PL de la question iv avec ce score et on ajoute les contraintes (1) à (4) ($M=2$, $\varepsilon$ petit).
+On reprend le programme de la marge avec ce score et on ajoute les contraintes (1) à (4) ($M=2$, $\varepsilon$ petit).
 
 \medskip
 \textbf{Variables.}
 \begin{itemize}
-  \item du modèle : $w_i\geq 0$, $b_i\in[0,1]$ pour $i\in\N$, et $\lambda\in[0,1]$ ;
+  \item du modèle : $w_i\geq 0$, $b_i\in[0,1+\varepsilon]$ pour $i\in\N$ (au-delà de 1, aucun objet n'atteint la frontière), et $\lambda\in[0,1]$ ;
   \item de la marge : $\alpha$ ;
   \item pour chaque objet $x$ et chaque critère $i$ : $\delta_i(x)\in\{0,1\}$ et $w_i(x)\geq 0$.
 \end{itemize}
@@ -184,15 +123,12 @@ On reprend le PL de la question iv avec ce score et on ajoute les contraintes (1
 
 \medskip
 Les $\delta_i(x)$ sont binaires, c'est donc un programme linéaire en nombres entiers (MILP) avec $n\,|A^*\cup R^*|$
-variables binaires. Comme en iv, si $\alpha^*>0$ le modèle appris restitue tout le learning set.
+variables binaires. Comme plus haut, si $\alpha^*>0$ le modèle appris restitue tout le learning set.
+Si les données ne sont pas séparables ($\alpha^*<0$), maximiser $\alpha$ réduit la pire erreur, ce qui n'est pas la même chose
+que maximiser le nombre d'objets bien classés. Ce cas ne se produit pas dans nos tests, puisque les learning sets sont
+générés par un modèle MR-Sort.
 
-% ------------------------------------------------------------------
-\subsection*{Question viii -- Résolution avec Gurobi}
-
-Voir la partie Jalon 1.
-
-% ------------------------------------------------------------------
-\subsection*{Question viii bis -- Généralisation à $p$ catégories}
+\subsection*{Généralisation à $p$ catégories}
 
 Les catégories vont de $\mathcal{C}^1$ (la pire) à $\mathcal{C}^p$ (la meilleure) et on cherche $p-1$ frontières
 $b^1,\dots,b^{p-1}$, $b^h$ séparant $\mathcal{C}^h$ et $\mathcal{C}^{h+1}$. Les poids et $\lambda$ sont les mêmes pour toutes les
@@ -212,8 +148,10 @@ avec le score $s_h(x)=\sum_{i\in\N} w^h_i(x)$.
 \end{align*}
 
 \medskip
-Pour $p=2$ on retrouve la question vii. Pour un objet de $\mathcal{C}^h$, seules $b^{h-1}$ et $b^h$ apparaissent dans ses
+Pour $p=2$ on retrouve le MILP précédent. Pour un objet de $\mathcal{C}^h$, seules $b^{h-1}$ et $b^h$ apparaissent dans ses
 contraintes, donc dans le code on ne crée les variables que pour ces deux frontières (au plus $2n$ binaires par objet).
+C'est ce programme que l'on résout avec Gurobi dans la partie suivante.
+
 
 % ==================================================================
 \section*{Jalon 1 : implémentation et validation}
@@ -243,10 +181,10 @@ Frontière $b^2$ (catégorie 2 / 3) & 41.5 & 49 & 33 & 43.5 & 49 \\
 \qquad $\lambda = 0.643 \approx 4.5/7$
 \end{center}
 
-Les critères 2 et 5 comptent double : pour franchir une frontière, il faut l'atteindre sur des critères qui totalisent
-au moins 5 points sur 7 (par exemple crit2, crit5 et un troisième). Ce modèle n'est pas le seul possible (cf. question iii).
-Sur chaque critère, la frontière peut être n'importe où entre deux valeurs voisines des données sans changer les affectations ;
-on l'a placée au milieu de cet intervalle pour qu'elle soit le plus loin possible des données.
+Les critères 2 et 5 comptent double. Pour franchir une frontière, il faut l'atteindre sur des critères qui totalisent
+au moins 5 points sur 7 (par exemple crit2, crit5 et un troisième). Ce modèle n'est pas le seul possible (cf. question iii en annexe).
+Sur chaque critère, la frontière peut être n'importe où entre deux valeurs voisines des données sans changer les affectations.
+On l'a placée au milieu de cet intervalle pour qu'elle soit le plus loin possible des données.
 
 \subsection*{Protocole de test}
 
@@ -277,8 +215,85 @@ $p$ & $|L|$ & Qualité moyenne sur $T$ & Écart-type & Temps moyen \\
 \end{tabular}
 \end{center}
 
-Dans les 100 essais, le learning set est bien classé à 100\,\%. La qualité sur $T$ augmente avec la taille de $L$ :
-avec plus d'exemples, les frontières sont mieux encadrées et $\mathcal{M}^*$ se rapproche de $\mathcal{M}'$. Avec 3 catégories
+Dans les 100 essais, le learning set est bien classé à 100\,\%. La qualité sur $T$ augmente avec la taille de $L$,
+car avec plus d'exemples, les frontières sont mieux encadrées et $\mathcal{M}^*$ se rapproche de $\mathcal{M}'$. Avec 3 catégories
 il faut plus d'exemples, puisqu'il y a deux frontières à apprendre.
+
+
+% ==================================================================
+\newpage
+\section*{Annexe : questions préliminaires (admission d'étudiants)}
+
+% ------------------------------------------------------------------
+\subsection*{Question i}
+
+Somme des poids des cours validés ($\geq 12$), avec $w=(0.25,0.15,0.2,0.4)$, $\lambda=0.66$ :
+Alice $0.15+0.2+0.4=0.75$ ($\A$), Bob $0.25+0.15+0.2=0.60$ ($\R$),
+Charlie $0.15+0.4=0.55$ ($\R$), David $1$ ($\A$).
+Bob ne peut pas améliorer sa situation. Avec 12 en physique, ce cours est déjà validé et une meilleure note
+n'y change rien. Seule une meilleure note en histoire (10) pourrait le faire admettre.
+
+% ------------------------------------------------------------------
+\subsection*{Question ii}
+
+Il faut que n'importe quels 3 cours atteignent $\lambda$ et que n'importe quels 2 cours restent en dessous. Le plus simple
+est de donner le même poids aux 4 cours, $w_M=w_P=w_L=w_H=\frac14$, avec $\lambda\in\left]\frac12,\frac34\right]$, par exemple
+$\lambda=0.75$. Alors 3 cours pèsent $\frac34\geq\lambda$ et 2 cours pèsent $\frac12<\lambda$. Ce n'est pas la seule solution,
+par exemple $w=(0.3,0.25,0.25,0.2)$ avec $\lambda=0.6$ convient aussi.
+
+% ------------------------------------------------------------------
+\subsection*{Question iii}
+
+Coalitions gagnantes (somme des poids $\geq \lambda$) dans les deux cas :
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Coalition & $w = (0.49, 0.49, 0.02)$, $\lambda=0.5$ & $w = (\frac13,\frac13,\frac13)$, $\lambda=0.5$ \\
+\midrule
+$\{1\}$, $\{2\}$, $\{3\}$ & $0.49,\ 0.49,\ 0.02$ : perdantes & $0.33$ : perdantes \\
+$\{1,2\}$ & $0.98$ : gagnante & $0.67$ : gagnante \\
+$\{1,3\}$, $\{2,3\}$ & $0.51$ : gagnantes & $0.67$ : gagnantes \\
+$\{1,2,3\}$ & $1$ : gagnante & $1$ : gagnante \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Dans les deux cas, un étudiant est admis si et seulement s'il valide \emph{au moins 2 cours sur 3}, donc
+les deux jeux de paramètres définissent la même règle.
+
+On en conclut que $(w,\lambda)$ n'est pas unique. Ce qui compte, ce sont les coalitions gagnantes. Les poids ne
+donnent pas directement l'importance d'un cours (le cours 3 ne pèse que $0.02$ mais il est aussi décisif que les autres).
+Pour juger un modèle appris, il faut donc regarder ses décisions plutôt que ses paramètres.
+
+% ------------------------------------------------------------------
+\subsection*{Question iv}
+
+$b$ étant connu, on connaît pour chaque objet $x$ l'ensemble des critères qu'il valide, $C(x)=\{i\in\N : x_i\geq b_i\}$,
+et son score $s(x)=\sum_{i\in C(x)} w_i$ est linéaire en $w$. Les variables sont les $w_i\geq 0$, $\lambda\in[0,1]$ et une marge $\alpha$.
+\begin{align*}
+\max\ & \alpha \\
+\text{s.c.}\ & s(x) \geq \lambda + \alpha && \forall x\in A^* \\
+& s(x) \leq \lambda - \alpha && \forall x\in R^* \\
+& \textstyle\sum_{i\in\N} w_i = 1
+\end{align*}
+$\alpha$ est le plus petit écart entre un score et $\lambda$. En le maximisant, on éloigne le plus possible les acceptés et
+les rejetés du seuil. Si $\alpha^*>0$, tous les objets sont bien classés, sinon aucun modèle ne colle parfaitement aux données.
+
+\begin{center}
+\begin{tikzpicture}[x=26cm,y=1cm,font=\small]
+  \fill[gray!15] (0.60,-0.15) rectangle (0.75,0.9);
+  \draw[->] (0.48,0) -- (1.03,0) node[right] {$s(x)$};
+  \foreach \t in {0.5,0.6,0.7,0.8,0.9,1.0} \draw (\t,0.06) -- (\t,-0.06) node[below] {\footnotesize\t};
+  \draw[dashed,thick] (0.675,-0.15) -- (0.675,1.15) node[above] {$\lambda$};
+  \draw[<->] (0.60,0.7) -- node[above] {$\alpha$} (0.675,0.7);
+  \draw[<->] (0.675,0.7) -- node[above] {$\alpha$} (0.75,0.7);
+  \foreach \v/\n in {0.55/Charlie,0.60/Bob} \fill[red!75!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
+  \foreach \v/\n in {0.75/Alice,1.0/David} \fill[green!50!black] (\v,0) circle (2.2pt) node[above=2pt,text=black] {\n};
+\end{tikzpicture}
+
+\footnotesize Scores des étudiants de la question i (rejetés en rouge, acceptés en vert).
+\end{center}
+
 
 \end{document}
